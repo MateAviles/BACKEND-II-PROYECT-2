@@ -11,5 +11,5 @@ const PORT = process.env.PORT || 8080;
 connectDB();
 
 app.listen(PORT, () => {
-    console.log(`Servidor corriendo em ${PORT}`);
+    console.log(`Servidor corriendo en ${PORT}`);
 });

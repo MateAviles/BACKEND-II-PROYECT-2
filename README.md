@@ -1,3 +1,5 @@
+
+
 # Backend II — Plataforma de Eventos
 
 API REST para la administración de eventos, construida con **Node.js + Express** y **MongoDB**, organizada por capas (routes → controllers → services → repositories → dao → models).
@@ -54,8 +56,8 @@ En esta primera etapa se entrega la **base arquitectónica**: servidor Express f
 ## Instalación
 
 ```bash
-# 1. Clonar el repositorio (debe ser público en GitHub)
-git clone <url-del-repositorio>
+# 1. Clonar el repositorio
+git clone https://github.com/MateAviles/BACKEND-II-PROYECT-2
 cd proyecto-eventos
 
 # 2. Instalar dependencias
@@ -66,7 +68,6 @@ copy .env.example .env      # Windows
 # cp .env.example .env      # macOS / Linux
 ```
 
-Completá `.env` con tus valores (ver siguiente sección).
 
 ---
 
