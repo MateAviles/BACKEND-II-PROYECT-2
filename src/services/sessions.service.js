@@ -14,7 +14,6 @@ export const registerUser = async (data) => {
         return error;
     }
 
-    // Si no llega body (o no es JSON), Express deja req.body en undefined
     const {first_name, last_name, email, password} = data || {};
 
     if(!first_name || !last_name || !email || !password){
@@ -26,7 +25,7 @@ export const registerUser = async (data) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if(!emailRegex.test(normalizedEmail)){
-        throw createError('Email inválido', 400);
+        throw createError('Faltan campos obligatorios', 400);
     }
 
     if(password.length < MIN_PASSWORD_LENGTH){
