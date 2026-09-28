@@ -1,14 +1,22 @@
 
 
+import { registerUser } from "../services/sessions.service.js";
+
 export const register = async(req, res) => {
     try{
-        res.status(200).json({
-            status: "success" ,
-            payload: "sessions funciona correctamente"
+
+        const user = await registerUser(req.body)
+
+        res.status(201).json({
+            status: "success",
+            payload: user
         });
     }catch(error){
-        res.status(500).json({
-            error: "error en el modulo de sessions"
+        const statusCode = error.status || 500
+
+        return res.status(statusCode).json({
+            status: "error",
+            message: error.message
         });
     }
 }
