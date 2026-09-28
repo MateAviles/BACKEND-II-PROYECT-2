@@ -4,6 +4,8 @@ import { findUserByEmail, saveUser } from "../repositories/users.repository.js";
 
 import { hashPassword } from "../utils/hash.js";
 
+const MIN_PASSWORD_LENGTH = 6;
+
 export const registerUser = async (data) => {
 
     const createError = (message, status) => {
@@ -12,35 +14,47 @@ export const registerUser = async (data) => {
         return error;
     }
 
-    const {first_name, last_name, email, password} = data;
+    // Si no llega body (o no es JSON), Express deja req.body en undefined
+    const {first_name, last_name, email, password} = data || {};
 
     if(!first_name || !last_name || !email || !password){
-        throw createError('invalid data', 400);
+        throw createError('Faltan campos obligatorios', 400);
     }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if(!emailRegex.test(email)){
-        throw createError('email invalid format', 400);
+    if(!emailRegex.test(normalizedEmail)){
+        throw createError('Email inválido', 400);
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
+    if(password.length < MIN_PASSWORD_LENGTH){
+        throw createError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`, 400);
+    }
 
     const existingUser = await findUserByEmail(normalizedEmail);
 
     if(existingUser){
-        throw createError('Este email ya existe', 409);
+        throw createError('El email ya está registrado', 409);
     }
 
     const hashedPassword = await hashPassword(password);
 
     const userData  = {first_name, last_name, email: normalizedEmail, password: hashedPassword, role : "user"};
 
-    const savedUser = await saveUser(userData);
+    let savedUser;
 
-    const userObject = savedUser.toObject();
+    try{
+        savedUser = await saveUser(userData);
+    }catch(error){
+        if(error.code === 11000){
+            throw createError('El email ya está registrado', 409);
+        }
+        throw error;
+    }
 
-    const { password: _pass, ...safeUser } = userObject;
+    const { _id, password: _pass, ...rest } = savedUser.toObject();
 
-    return safeUser;
+    return { id: _id, ...rest };
 }

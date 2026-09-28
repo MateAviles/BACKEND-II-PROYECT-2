@@ -5,7 +5,7 @@ import { registerUser } from "../services/sessions.service.js";
 export const register = async(req, res) => {
     try{
 
-        const user = await registerUser(req.body)
+        const user = await registerUser(req.body || {})
 
         res.status(201).json({
             status: "success",
