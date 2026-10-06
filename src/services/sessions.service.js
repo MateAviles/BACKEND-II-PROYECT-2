@@ -2,7 +2,9 @@
 
 import { findUserByEmail, saveUser } from "../repositories/users.repository.js";
 
-import { hashPassword } from "../utils/hash.js";
+import { hashPassword, isValidPassword } from "../utils/hash.js";
+
+import { generateToken } from "../utils/jwt.js"; 
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -56,4 +58,43 @@ export const registerUser = async (data) => {
     const { _id, password: _pass, ...rest } = savedUser.toObject();
 
     return { id: _id, ...rest };
+}
+
+export const loginUser = async (data) => {
+
+    const createError = (message, status) => {
+        const error = new Error(message);
+        error.status = status;
+        return error;
+    }
+
+    const {email, password} = data || {};
+
+    if(!email || !password){
+        throw createError('Credenciales inválidas', 400);
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    const user = await findUserByEmail(normalizedEmail);
+
+    if(!user){
+        throw createError('Credenciales inválidas', 401);
+    }
+
+    const validPassword = await isValidPassword(password, user.password);
+
+    if(!validPassword){
+        throw createError('Credenciales inválidas', 401);
+    }
+
+    const payload = {
+        id : user._id,
+        email : user.email,
+        role: user.role
+    }
+
+    const token = generateToken(payload);
+
+    return token;
 }
