@@ -7,7 +7,7 @@ export const findByEmail = async (email) => {
         email
     });
 
-    return user
+    return user;
 }
 
 export const createUser = async (userData) => {

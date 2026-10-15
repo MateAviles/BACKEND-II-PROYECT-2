@@ -1,31 +1,26 @@
 
 
-import { loginUser, registerUser } from "../services/sessions.service.js";
+import { generateToken } from "../utils/jwt.js";
 
 export const register = async(req, res) => {
-    try{
-
-        const user = await registerUser(req.body || {})
 
         res.status(201).json({
             status: "success",
-            payload: user
+            payload: req.user
         });
-    }catch(error){
-        const statusCode = error.status || 500
-
-        return res.status(statusCode).json({
-            status: "error",
-            message: error.message
-        });
-    }
 }
 
 
 export const login = async (req, res) => {
     try{
 
-        const token = await loginUser(req.body);
+        const payload = {
+            id: req.user._id,
+            email: req.user.email,
+            role: req.user.role
+        }
+
+        const token = generateToken(payload);
 
         res.cookie("currentUser", token, {
             httpOnly : true,
@@ -52,7 +47,6 @@ export const login = async (req, res) => {
 export const current = async (req, res) => {
     return res.status(200).json({
         status: 'success',
-        message: 'usuario autenticado',
         payload: req.user
     });
 }
