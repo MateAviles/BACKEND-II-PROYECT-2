@@ -4,6 +4,7 @@ import { Router } from 'express';
 import passport from 'passport';
 
 import { register, login, current, logout } from '../controllers/sessions.controller.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
@@ -21,12 +22,7 @@ router.post('/login', passport.authenticate('login',{
     login
 );
 
-router.get('/current', passport.authenticate('current', {
-    session: false,
-    failWithError: true
-    }),
-    current
-);
+router.get('/current', authMiddleware, current);
 
 router.post('/logout', logout)
 

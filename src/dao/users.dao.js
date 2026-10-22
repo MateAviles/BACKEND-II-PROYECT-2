@@ -15,3 +15,9 @@ export const createUser = async (userData) => {
 
     return newUser;
 }
+
+export const findAll = async () => {
+    const users = await UserModel.find().select('-password');
+
+    return users;
+}

@@ -6,6 +6,7 @@ import passport from 'passport';
 
 import eventsRouter from './routes/events.router.js';
 import sessionsRouter from './routes/sessions.router.js';
+import usersRouter from './routes/users.router.js';
 
 import { translatePassportError } from './config/passport.config.js';
 
@@ -17,6 +18,7 @@ app.use(passport.initialize());
 
 app.use("/api/events", eventsRouter);
 app.use("/api/sessions", sessionsRouter);
+app.use("/api/users", usersRouter);
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({
