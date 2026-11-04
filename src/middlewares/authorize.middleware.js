@@ -2,6 +2,7 @@
 import mongoose from "mongoose";
 
 import { fetchEventById } from "../services/events.services.js"; 
+import { findTicketById } from "../services/tickets.services.js";
 
 
 export const authorizeMiddleware = (...allowedRoles) => {
@@ -56,6 +57,45 @@ export const authorizeEventOwnerOrAdmin = async (req, res, next) => {
         }
     
         req.event = event;
+    
+        next();
+    }catch(error){
+        return next(error);
+    }
+}
+
+export const authorizeTicketOwnerOrAdmin = async (req, res, next) => {
+    try{
+
+        const { ticketId } = req.params;
+
+        if(!mongoose.isValidObjectId(ticketId)){
+            return res.status(404).json({
+                status: 'error',
+                message: 'Ticket no encontrado'
+            });
+        }
+    
+        const ticket = await findTicketById(ticketId);
+    
+        if(!ticket){
+            return res.status(404).json({
+                status: 'error',
+                message: 'Ticket no encontrado'
+            });
+        }
+    
+        const isAdmin = req.user.role === "admin";
+        const isOwner = ticket.user.toString() === req.user.id;
+    
+        if(!isAdmin && !isOwner){
+            return res.status(403).json({
+                status: 'error',
+                message: 'No tenés permisos para cancelar este ticket'
+            });
+        }
+    
+        req.ticket = ticket;
     
         next();
     }catch(error){

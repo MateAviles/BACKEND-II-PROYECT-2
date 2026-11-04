@@ -34,7 +34,7 @@ export const update = async (eventId, eventData) => {
     const eventUpdated = await eventModel.findByIdAndUpdate(
         eventId, 
         eventData, 
-        {new: true, runValidators: true}
+        {returnDocument: 'after', runValidators: true}
     );
     
     return eventUpdated;

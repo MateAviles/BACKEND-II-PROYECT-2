@@ -6,9 +6,9 @@ import { fetchEvents, fetchEventById, createEvent, updateEventService, updateEve
 
 export const getEvents = async(req, res, next) => {
     try{
-        const { status, category, location, dateFrom, dateTo, page, limit, sort } = req.query;
+        const { status, category, location, organizer, dateFrom, dateTo, page, limit, sort } = req.query;
 
-        const result = await fetchEvents({ status, category, location, dateFrom, dateTo, page, limit, sort });
+        const result = await fetchEvents({ status, category, location, organizer, dateFrom, dateTo, page, limit, sort });
 
         res.status(200).json({
             status: "success",
@@ -77,27 +77,44 @@ export const updateEventController = async (req, res, next) => {
     try {
         const eventId = req.event._id;
 
-        const allowedFields = [ 'title', 'description', 'date', 'location', 'capacity', 'category', 'price' ];
+        const requiredFields = [
+            'title',
+            'description',
+            'date',
+            'location',
+            'capacity',
+            'category',
+            'price'
+        ];
 
-        let eventData = {};
+        const missingFields = requiredFields.some(
+            field => req.body[field] === undefined
+        );
 
-        for(const field of allowedFields){
-            if(req.body[field] !== undefined){
-                eventData[field] = req.body[field];
-            }
+        if (missingFields) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Faltan campos obligatorios para modificar el evento'
+            });
         }
 
-        const updatedEvent = await updateEventService(eventId, eventData, req.event);
+        const eventData = {};
+
+        for (const field of requiredFields) {
+            eventData[field] = req.body[field];
+        }
+
+        const updatedEvent = await updateEventService(eventId,eventData,req.event);
 
         return res.status(200).json({
             status: 'success',
             payload: updatedEvent
         });
 
-    }catch(error) {
+    } catch (error) {
         return next(error);
     }
-}
+};
 
 
 export const updateEventStatusController = async (req, res, next) => {

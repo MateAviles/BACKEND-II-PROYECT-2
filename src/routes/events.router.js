@@ -4,8 +4,11 @@ import { Router } from "express";
 import { getEvents, getEventByIdController, createEventController, updateEventController, updateEventStatusController } from "../controllers/events.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { authorizeMiddleware, authorizeEventOwnerOrAdmin } from "../middlewares/authorize.middleware.js";
+import { eventTicketsRouter } from "./tickets.router.js";
 
 const router = Router();
+
+router.use('/:eventId/tickets', eventTicketsRouter);
 
 router.get('/', getEvents);
 router.get('/:eventId', getEventByIdController);

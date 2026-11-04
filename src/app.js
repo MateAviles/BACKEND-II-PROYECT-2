@@ -7,6 +7,7 @@ import passport from 'passport';
 import eventsRouter from './routes/events.router.js';
 import sessionsRouter from './routes/sessions.router.js';
 import usersRouter from './routes/users.router.js';
+import { ticketsRouter } from './routes/tickets.router.js';
 
 import { translatePassportError } from './config/passport.config.js';
 
@@ -19,6 +20,7 @@ app.use(passport.initialize());
 app.use("/api/events", eventsRouter);
 app.use("/api/sessions", sessionsRouter);
 app.use("/api/users", usersRouter);
+app.use("/api/tickets", ticketsRouter);
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({
@@ -45,9 +47,13 @@ app.use((err, req, res, next) => {
         });
     }
 
-    res.status(err.status || 500).json({
+    const status = err.status || 500;
+
+    res.status(status).json({
         status: "error",
-        message: err.message || "Error interno del servidor"
+        message: status >= 500
+            ? "Error interno del servidor"
+            : err.message
     });
 });
 

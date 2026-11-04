@@ -1,6 +1,6 @@
 
 
-import { getAll, countAll, create, getById, update } from "../dao/events.dao.js";
+import { getAll, countAll, create, getById, update} from "../dao/events.dao.js";
 
 export const getAllEvents = async (query, options) => {
     const events = await getAll(query, options);

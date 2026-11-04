@@ -16,8 +16,8 @@ const eventSchema = new mongoose.Schema(
         },
         category:{
             type: String,
-            ref: 'Category',
-            required: true
+            required: true,
+            trim: true
         },
         date:{
             type: Date,
@@ -50,6 +50,9 @@ const eventSchema = new mongoose.Schema(
             ref: 'User',
             required: true
         }
+    },
+    {
+        timestamps: true
     }
 );
 
