@@ -44,7 +44,9 @@ ticketSchema.index(
     { user: 1, event: 1 },
     {
         unique: true,
-        partialFilterExpression: { status: { $ne: 'cancelled' } }
+        partialFilterExpression: { 
+            status: {$in: ['confirmed', 'pending' ]}
+        }
     }
 );
 
