@@ -2,22 +2,43 @@
 
 import { UserModel } from "../models/User.js";
 
-export const findByEmail = async (email) => {
-    const user = await UserModel.findOne({
-        email
-    });
+export class UserDAO {
 
-    return user;
+    async create(userData) {
+        return await UserModel.create(userData);
+    }
+
+    async findById(id) {
+        return await UserModel.findById(id);
+    }
+
+    async findOne(filter) {
+        return await UserModel.findOne(filter);
+    }
+
+    async find(filter = {}, { sort, skip, limit, populate, select } = {}) {
+        let query = UserModel.find(filter);
+
+        if(select) query = query.select(select);
+        if(sort) query = query.sort(sort);
+        if(skip !== undefined) query = query.skip(skip);
+        if(limit !== undefined) query = query.limit(limit);
+        if(populate) query = query.populate(populate);
+
+        return await query;
+    }
+
+    async update(id, userData) {
+        return await UserModel.findByIdAndUpdate(
+            id,
+            userData,
+            { returnDocument: "after", runValidators: true }
+        );
+    }
+
+    async count(filter = {}) {
+        return await UserModel.countDocuments(filter);
+    }
 }
 
-export const createUser = async (userData) => {
-    const newUser = await UserModel.create(userData); 
-
-    return newUser;
-}
-
-export const findAll = async () => {
-    const users = await UserModel.find().select('-password');
-
-    return users;
-}
+export const userDAO = new UserDAO();

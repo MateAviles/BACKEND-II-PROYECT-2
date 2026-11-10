@@ -1,9 +1,8 @@
 
 
-import mongoose from "mongoose";
-
-import { getAllEvents, countEvents, saveEvent, findEventById, updateEvent } from "../repositories/events.repository.js";
+import { eventRepository } from "../repositories/events.repository.js";
 import { createError } from "../utils/errors.js";
+import { isValidObjectId } from "../utils/ids.js";
 
 const EVENT_STATUSES = ['draft', 'published', 'cancelled', 'finished'];
 const SORTABLE_FIELDS = ['date', 'title', 'price', 'capacity', 'createdAt'];
@@ -119,7 +118,7 @@ export const fetchEvents = async (filters = {}) => {
     }
 
     if(filters.organizer && String(filters.organizer).trim() !== ""){
-        if(!mongoose.isValidObjectId(filters.organizer)){
+        if(!isValidObjectId(filters.organizer)){
             throw createError('El organizador es invalido', 400);
         }
 
@@ -167,8 +166,8 @@ export const fetchEvents = async (filters = {}) => {
     const skip = (page - 1) * limit;
 
     const [events, total] = await Promise.all([
-        getAllEvents(query, { sort, skip, limit }),
-        countEvents(query)
+        eventRepository.findEvents(query, { sort, skip, limit }),
+        eventRepository.countEvents(query)
     ]);
 
     return {
@@ -208,14 +207,46 @@ export const createEvent = async (data) => {
         organizer
     };
 
-    const newEvent = await saveEvent(eventData);
+    const newEvent = await eventRepository.save(eventData);
 
     return newEvent;
 };
 
+
 export const fetchEventById = async (eventId) => {
-    return await findEventById(eventId);
+    return await eventRepository.findById(eventId);
 };
+
+
+export const loadEvent = async (eventId) => {
+
+    if(!isValidObjectId(eventId)){
+        throw createError('Evento no encontrado', 404);
+    }
+
+    const event = await fetchEventById(eventId);
+
+    if(!event){
+        throw createError('Evento no encontrado', 404);
+    }
+
+    return event;
+};
+
+
+export const loadManagedEvent = async (eventId, user) => {
+    const event = await loadEvent(eventId);
+
+    const isAdmin = user.role === 'admin';
+    const isOwner = event.organizer.toString() === user.id;
+
+    if(!isAdmin && !isOwner){
+        throw createError('No tenés permisos para modificar este evento', 403);
+    }
+
+    return event;
+};
+
 
 const validateRequiredFields = (eventData) => {
     const requiredFields = ['title', 'description', 'category', 'location'];
@@ -231,7 +262,16 @@ const validateRequiredFields = (eventData) => {
 };
 
 
+export const EDITABLE_FIELDS = ['title', 'description', 'date', 'location', 'capacity', 'category', 'price'];
+
+
 export const updateEventService = async (eventId, eventData, currentEvent) => {
+
+    const hasMissingFields = EDITABLE_FIELDS.some(field => eventData[field] === undefined);
+
+    if(hasMissingFields){
+        throw createError('Faltan campos obligatorios para modificar el evento', 400);
+    }
 
     if(currentEvent.status === 'cancelled' || currentEvent.status === "finished"){
         throw createError('El evento esta cancelado o finalizado y no puede modificarse', 409);
@@ -251,7 +291,7 @@ export const updateEventService = async (eventId, eventData, currentEvent) => {
     
     validateCapacityAndPrice(eventData);
 
-    const updatedEvent = await updateEvent(eventId, eventData);
+    const updatedEvent = await eventRepository.update(eventId, eventData);
 
     return updatedEvent;
 };
@@ -273,7 +313,7 @@ export const updateEventStatusService = async (eventId, newStatus, currentEvent)
         throw createError(`No se permite cambiar el estado de ${currentEvent.status} a ${newStatus}`, 409);
     };
 
-    const updatedEvent = await updateEvent(eventId, { status: newStatus });
+    const updatedEvent = await eventRepository.update(eventId, { status: newStatus });
 
     return updatedEvent;
 };

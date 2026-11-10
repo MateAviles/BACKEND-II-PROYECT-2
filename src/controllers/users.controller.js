@@ -1,6 +1,7 @@
 
 
 import { fetchUsers } from "../services/users.services.js";
+import { usersToDTO } from "../dto/user.dto.js";
 
 export const getUsers = async (req, res, next) => {
     try{
@@ -8,7 +9,7 @@ export const getUsers = async (req, res, next) => {
 
         return res.status(200).json({
             status: 'success',
-            payload: users
+            payload: usersToDTO(users)
         });
     }catch(error){
         return next(error);

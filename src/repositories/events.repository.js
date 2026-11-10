@@ -1,29 +1,32 @@
 
 
-import { getAll, countAll, create, getById, update} from "../dao/events.dao.js";
+import { eventDAO } from "../dao/events.dao.js";
 
-export const getAllEvents = async (query, options) => {
-    const events = await getAll(query, options);
+export class EventRepository {
 
-    return events;
-};
+    constructor(dao = eventDAO) {
+        this.dao = dao;
+    }
 
-export const countEvents = async (query) => {
-    const total = await countAll(query);
+    async findEvents(query = {}, options = {}) {
+        return await this.dao.find(query, options);
+    }
 
-    return total;
-};
+    async countEvents(query = {}) {
+        return await this.dao.count(query);
+    }
 
-export const saveEvent = async (eventData) => {
-    const newEvent = await create(eventData);
+    async findById(id) {
+        return await this.dao.findById(id);
+    }
 
-    return newEvent;
-};
+    async save(eventData) {
+        return await this.dao.create(eventData);
+    }
 
-export const findEventById = async (eventId) => {
-    return await getById(eventId);
-};
-
-export const updateEvent = async (eventId, eventData) => {
-    return await update(eventId, eventData);
+    async update(id, eventData) {
+        return await this.dao.update(id, eventData);
+    }
 }
+
+export const eventRepository = new EventRepository();

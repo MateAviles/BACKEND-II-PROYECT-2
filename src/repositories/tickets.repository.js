@@ -1,31 +1,65 @@
 
 
-import { create, getById, findActiveByUserAndEvent, sumActiveQuantityByEvent, findByUser, findByEvent, update } from "../dao/tickets.dao.js";
+import { ticketDAO } from "../dao/tickets.dao.js";
 
-export const saveTicket = async (ticketData) => {
-    return await create(ticketData);
-};
+const ACTIVE_STATUSES = ["confirmed", "pending"];
 
-export const findTicketById = async (ticketId) => {
-    return await getById(ticketId);
-};
+export class TicketRepository {
 
-export const findActiveTicket = async (userId, eventId) => {
-    return await findActiveByUserAndEvent(userId, eventId);
-};
+    constructor(dao = ticketDAO) {
+        this.dao = dao;
+    }
 
-export const occupiedQuantity = async (eventId) => {
-    return await sumActiveQuantityByEvent(eventId);
-};
+    async createTicket(ticketData) {
+        return await this.dao.create(ticketData);
+    }
 
-export const findUserTickets = async (userId) => {
-    return await findByUser(userId);
-};
+    async findTicketById(ticketId) {
+        return await this.dao.findById(ticketId);
+    }
 
-export const findEventTickets = async (eventId) => {
-    return await findByEvent(eventId);
-};
+    async findActiveTicket(userId, eventId) {
+        return await this.dao.findOne({
+            user: userId,
+            event: eventId,
+            status: { $in: ACTIVE_STATUSES }
+        });
+    }
 
-export const updateTicket = async (ticketId, ticketData) => {
-    return await update(ticketId, ticketData);
-};
+    async countActiveTickets(eventId) {
+        return await this.dao.count({
+            event: eventId,
+            status: { $in: ACTIVE_STATUSES }
+        });
+    }
+
+    async sumActiveQuantities(eventId) {
+        return await this.dao.sum(
+            { event: eventId, status: { $in: ACTIVE_STATUSES } },
+            "quantity"
+        );
+    }
+
+    async findUserTickets(userId) {
+        return await this.dao.find(
+            { user: userId },
+            { sort: { createdAt: -1 }, populate: { path: "event", select: "title date location" } }
+        );
+    }
+
+    async findEventTickets(eventId) {
+        return await this.dao.find(
+            { event: eventId },
+            { sort: { createdAt: -1 }, populate: { path: "user", select: "first_name last_name email" } }
+        );
+    }
+
+    async cancelTicket(ticketId) {
+        return await this.dao.update(ticketId, {
+            status: "cancelled",
+            cancelledAt: new Date()
+        });
+    }
+}
+
+export const ticketRepository = new TicketRepository();

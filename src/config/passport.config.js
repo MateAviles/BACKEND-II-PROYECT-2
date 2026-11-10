@@ -5,7 +5,7 @@ import { Strategy as LocalStrategy} from "passport-local";
 import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 
 import { hashPassword, isValidPassword } from "../utils/hash.js";
-import { findUserByEmail, saveUser } from "../repositories/users.repository.js";
+import { userRepository } from "../repositories/users.repository.js";
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -41,7 +41,7 @@ passport.use('register', new LocalStrategy(
                 return done(authError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`, 400));
             }
 
-            const existingUser = await findUserByEmail(normalizedEmail);
+            const existingUser = await userRepository.findByEmail(normalizedEmail);
 
             if(existingUser){
                 return done(authError('El email ya está registrado', 409));
@@ -60,7 +60,7 @@ passport.use('register', new LocalStrategy(
             let savedUser;
 
             try{
-                savedUser = await saveUser(userData);
+                savedUser = await userRepository.save(userData);
             }catch(error){
 
                 if(error.code === 11000){
@@ -91,7 +91,7 @@ passport.use('login', new LocalStrategy(
 
             const normalizedEmail = String(email).trim().toLowerCase();
 
-            const user = await findUserByEmail(normalizedEmail);
+            const user = await userRepository.findByEmail(normalizedEmail);
 
             if(!user){
                 return done(authError('Credenciales inválidas', 401));
@@ -170,6 +170,7 @@ const PASSPORT_MESSAGES = {
 };
 
 /**
+ * posibles errores:
  * @param {Error} error  error recibido por el error handler global
  * @param {string} path  req.path
  * @returns {string|null} mensaje a responder, o null si no corresponde traducir

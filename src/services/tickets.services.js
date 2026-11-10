@@ -1,14 +1,12 @@
 
 
 import { randomBytes } from "node:crypto";
-import mongoose from "mongoose";
 
-import { saveTicket, findTicketById, findActiveTicket, occupiedQuantity, findUserTickets, findEventTickets, updateTicket } from "../repositories/tickets.repository.js";
-import { fetchEventById } from "./events.services.js";
+import { ticketRepository } from "../repositories/tickets.repository.js";
+import { loadEvent } from "./events.services.js";
 import { createError } from "../utils/errors.js";
+import { isValidObjectId } from "../utils/ids.js";
 import { sendTicketConfirmation } from "../utils/mailer.js";
-
-const ACTIVE_STATUSES = ['confirmed', 'pending'];
 
 
 const generateReservationCode = () => {
@@ -17,15 +15,7 @@ const generateReservationCode = () => {
 
 export const createTicketService = async ({ eventId, quantity, userId, userEmail }) => {
 
-    if(!mongoose.isValidObjectId(eventId)){
-        throw createError('Evento no encontrado', 404);
-    }
-
-    const event = await fetchEventById(eventId);
-
-    if(!event){
-        throw createError('Evento no encontrado', 404);
-    }
+    const event = await loadEvent(eventId);
 
     if(typeof quantity !== 'number' || !Number.isInteger(quantity) || quantity <= 0){
         throw createError('La cantidad debe ser un número entero mayor a 0', 400);
@@ -43,20 +33,20 @@ export const createTicketService = async ({ eventId, quantity, userId, userEmail
         throw createError('El evento no está publicado y no admite inscripciones', 400);
     }
 
-    const occupied = await occupiedQuantity(eventId);
+    const occupied = await ticketRepository.sumActiveQuantities(eventId);
     const available = event.capacity - occupied;
 
     if(quantity > available){
         throw createError(`No hay cupos suficientes: quedan ${Math.max(available, 0)} disponibles`, 409);
     }
 
-    const existingTicket = await findActiveTicket(userId, eventId);
+    const existingTicket = await ticketRepository.findActiveTicket(userId, eventId);
 
     if(existingTicket){
         throw createError('Ya tenés una inscripción activa para este evento', 409);
     }
 
-    const ticket = await saveTicket({
+    const ticket = await ticketRepository.createTicket({
         user: userId,
         event: eventId,
         quantity,
@@ -78,13 +68,37 @@ export const createTicketService = async ({ eventId, quantity, userId, userEmail
 
 
 export const fetchMyTickets = async (userId) => {
-    return await findUserTickets(userId);
+    return await ticketRepository.findUserTickets(userId);
 };
 
 
 export const fetchEventTickets = async (eventId) => {
-    return await findEventTickets(eventId);
+    return await ticketRepository.findEventTickets(eventId);
 };
+
+
+export const loadOwnedTicket = async (ticketId, user) => {
+
+    if(!isValidObjectId(ticketId)){
+        throw createError('Ticket no encontrado', 404);
+    }
+
+    const ticket = await ticketRepository.findTicketById(ticketId);
+
+    if(!ticket){
+        throw createError('Ticket no encontrado', 404);
+    }
+
+    const isAdmin = user.role === 'admin';
+    const isOwner = ticket.user.toString() === user.id;
+
+    if(!isAdmin && !isOwner){
+        throw createError('No tenés permisos para cancelar este ticket', 403);
+    }
+
+    return ticket;
+};
+
 
 export const cancelTicketService = async (ticket) => {
 
@@ -92,15 +106,9 @@ export const cancelTicketService = async (ticket) => {
         throw createError('El ticket ya está cancelado', 409);
     }
 
-    const cancelledTicket = await updateTicket(ticket._id, {
-        status: 'cancelled',
-        cancelledAt: new Date()
-    });
+    const cancelledTicket = await ticketRepository.cancelTicket(ticket._id);
 
     await cancelledTicket.populate('event', 'title date location');
 
     return cancelledTicket;
 };
-
-
-export { findTicketById, ACTIVE_STATUSES };

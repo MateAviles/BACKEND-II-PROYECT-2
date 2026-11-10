@@ -1,21 +1,28 @@
 
 
-import { findByEmail, createUser, findAll } from "../dao/users.dao.js";
+import { userDAO } from "../dao/users.dao.js";
 
-export const findUserByEmail = async (email) =>{
-    const user = await findByEmail(email);
+export class UserRepository {
 
-    return user;
-} 
+    constructor(dao = userDAO) {
+        this.dao = dao;
+    }
 
-export const saveUser = async (data) => {
-    const user = await createUser(data);
+    async findByEmail(email) {
+        return await this.dao.findOne({ email });
+    }
 
-    return user;
+    async findById(id) {
+        return await this.dao.findById(id);
+    }
+
+    async save(userData) {
+        return await this.dao.create(userData);
+    }
+
+    async findAll() {
+        return await this.dao.find({});
+    }
 }
 
-export const findAllUsers = async () => {
-    const users = await findAll();
-
-    return users;
-}
+export const userRepository = new UserRepository();

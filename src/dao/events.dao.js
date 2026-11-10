@@ -1,41 +1,44 @@
 
 
-import { eventModel } from '../models/Event.js';
+import { eventModel } from "../models/Event.js";
 
-export const getAll = async (query = {}, { sort = { date: 1 }, skip, limit } = {}) => {
-    const events = await eventModel
-        .find(query)
-        .sort(sort)
-        .skip(skip)
-        .limit(limit);
+export class EventDAO {
 
-    return events;
-};
+    async create(eventData) {
+        return await eventModel.create(eventData);
+    }
 
-export const countAll = async (query = {}) => {
-    const total = await eventModel.countDocuments(query);
+    async findById(id) {
+        return await eventModel.findById(id);
+    }
 
-    return total;
-};
+    async findOne(filter) {
+        return await eventModel.findOne(filter);
+    }
 
-export const create = async (eventData) => {
-    const newEvent = await eventModel.create(eventData); 
+    async find(filter = {}, { sort = { date: 1 }, skip, limit, populate, select } = {}) {
+        let query = eventModel.find(filter);
 
-    return newEvent;
-};
+        if(select) query = query.select(select);
+        if(sort) query = query.sort(sort);
+        if(skip !== undefined) query = query.skip(skip);
+        if(limit !== undefined) query = query.limit(limit);
+        if(populate) query = query.populate(populate);
 
-export const getById = async (eventId) => {
-    const event = await eventModel.findById(eventId);
-    return event;
-};
+        return await query;
+    }
 
+    async update(id, eventData) {
+        return await eventModel.findByIdAndUpdate(
+            id,
+            eventData,
+            { returnDocument: "after", runValidators: true }
+        );
+    }
 
-export const update = async (eventId, eventData) => {
-    const eventUpdated = await eventModel.findByIdAndUpdate(
-        eventId, 
-        eventData, 
-        {returnDocument: 'after', runValidators: true}
-    );
-    
-    return eventUpdated;
+    async count(filter = {}) {
+        return await eventModel.countDocuments(filter);
+    }
 }
+
+export const eventDAO = new EventDAO();

@@ -1,8 +1,8 @@
 
 
-import mongoose from "mongoose";
-
-import { fetchEvents, fetchEventById, createEvent, updateEventService, updateEventStatusService } from "../services/events.services.js";
+import { fetchEvents, loadEvent, createEvent, updateEventService, updateEventStatusService } from "../services/events.services.js";
+import { EDITABLE_FIELDS } from "../services/events.services.js";
+import { eventDTO, eventsToDTO } from "../dto/event.dto.js";
 
 export const getEvents = async(req, res, next) => {
     try{
@@ -12,7 +12,7 @@ export const getEvents = async(req, res, next) => {
 
         res.status(200).json({
             status: "success",
-            data: result.data,
+            data: eventsToDTO(result.data),
             page: result.page,
             limit: result.limit,
             total: result.total,
@@ -25,27 +25,11 @@ export const getEvents = async(req, res, next) => {
 
 export const getEventByIdController = async(req, res, next) => {
     try{
-        const { eventId } = req.params;
-
-        if(!mongoose.isValidObjectId(eventId)){
-            return res.status(404).json({
-                status: 'error',
-                message: 'Evento no encontrado'
-            });
-        }
-
-        const event = await fetchEventById(eventId);
-
-        if(!event){
-            return res.status(404).json({
-                status: 'error',
-                message: 'Evento no encontrado'
-            });
-        }
+        const event = await loadEvent(req.params.eventId);
 
         return res.status(200).json({
             status: 'success',
-            payload: event
+            payload: eventDTO(event)
         });
 
     }catch(error){
@@ -64,7 +48,7 @@ export const createEventController = async (req, res, next) => {
 
         return res.status(201).json({
             status: 'success',
-            payload: newEvent
+            payload: eventDTO(newEvent)
         });
 
     }catch(error){
@@ -77,38 +61,17 @@ export const updateEventController = async (req, res, next) => {
     try {
         const eventId = req.event._id;
 
-        const requiredFields = [
-            'title',
-            'description',
-            'date',
-            'location',
-            'capacity',
-            'category',
-            'price'
-        ];
-
-        const missingFields = requiredFields.some(
-            field => req.body[field] === undefined
-        );
-
-        if (missingFields) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Faltan campos obligatorios para modificar el evento'
-            });
-        }
-
         const eventData = {};
 
-        for (const field of requiredFields) {
+        for (const field of EDITABLE_FIELDS) {
             eventData[field] = req.body[field];
         }
 
-        const updatedEvent = await updateEventService(eventId,eventData,req.event);
+        const updatedEvent = await updateEventService(eventId, eventData, req.event);
 
         return res.status(200).json({
             status: 'success',
-            payload: updatedEvent
+            payload: eventDTO(updatedEvent)
         });
 
     } catch (error) {
@@ -126,7 +89,7 @@ export const updateEventStatusController = async (req, res, next) => {
 
         return res.status(200).json({
             status: 'success',
-            payload: updatedEvent
+            payload: eventDTO(updatedEvent)
         });
 
     }catch(error) {

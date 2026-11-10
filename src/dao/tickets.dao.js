@@ -3,57 +3,58 @@
 import mongoose from "mongoose";
 import { ticketModel } from "../models/Ticket.js";
 
-export const create = async (ticketData) => {
-    const newTicket = await ticketModel.create(ticketData);
-    return newTicket;
-};
+export class TicketDAO {
 
-export const getById = async (ticketId) => {
-    return await ticketModel.findById(ticketId);
-};
+    async create(ticketData) {
+        return await ticketModel.create(ticketData);
+    }
 
-export const findActiveByUserAndEvent = async (userId, eventId) => {
-    return await ticketModel.findOne({
-        user: userId,
-        event: eventId,
-        status: { $in: ['confirmed', 'pending'] }
-    });
-};
+    async findById(id) {
+        return await ticketModel.findById(id);
+    }
 
-export const sumActiveQuantityByEvent = async (eventId) => {
-    const result = await ticketModel.aggregate([
-        {
-            $match: {
-                event: new mongoose.Types.ObjectId(eventId),
-                status: { $in: ['confirmed', 'pending'] }
-            }
-        },
-        {
-            $group: { _id: null, total: { $sum: "$quantity" } }
+    async findOne(filter) {
+        return await ticketModel.findOne(filter);
+    }
+
+    async find(filter = {}, { sort, skip, limit, populate, select } = {}) {
+        let query = ticketModel.find(filter);
+
+        if(select) query = query.select(select);
+        if(sort) query = query.sort(sort);
+        if(skip !== undefined) query = query.skip(skip);
+        if(limit !== undefined) query = query.limit(limit);
+        if(populate) query = query.populate(populate);
+
+        return await query;
+    }
+
+    async update(id, ticketData) {
+        return await ticketModel.findByIdAndUpdate(
+            id,
+            ticketData,
+            { returnDocument: "after", runValidators: true }
+        );
+    }
+
+    async count(filter = {}) {
+        return await ticketModel.countDocuments(filter);
+    }
+
+    async sum(filter, field) {
+        const match = { ...filter };
+
+        if(typeof match.event === "string"){
+            match.event = new mongoose.Types.ObjectId(match.event);
         }
-    ]);
 
-    return result[0]?.total ?? 0;
-};
+        const result = await ticketModel.aggregate([
+            { $match: match },
+            { $group: { _id: null, total: { $sum: `$${field}` } } }
+        ]);
 
-export const findByUser = async (userId) => {
-    return await ticketModel
-        .find({ user: userId })
-        .sort({ createdAt: -1 })
-        .populate('event', 'title date location');
-};
+        return result[0]?.total ?? 0;
+    }
+}
 
-export const findByEvent = async (eventId) => {
-    return await ticketModel
-        .find({ event: eventId })
-        .sort({ createdAt: -1 })
-        .populate('user', 'first_name last_name email');
-};
-
-export const update = async (ticketId, ticketData) => {
-    return await ticketModel.findByIdAndUpdate(
-        ticketId,
-        ticketData,
-        { returnDocument: 'after', runValidators: true }
-    );
-};
+export const ticketDAO = new TicketDAO();

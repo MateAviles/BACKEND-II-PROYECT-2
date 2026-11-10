@@ -1,17 +1,18 @@
 
 
 import { generateToken } from "../utils/jwt.js";
+import { sessionUserDTO } from "../dto/user.dto.js";
 
 export const register = async(req, res) => {
 
         res.status(201).json({
             status: "success",
-            payload: req.user
+            payload: sessionUserDTO(req.user)
         });
 }
 
 
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
     try{
 
         const payload = {
@@ -35,19 +36,14 @@ export const login = async (req, res) => {
         })
 
     }catch(error){
-        const statusCode = error.status || 500
-
-        return res.status(statusCode).json({
-            status: 'error',
-            message: error.message
-        })
+        return next(error);
     }
 }
 
 export const current = async (req, res) => {
     return res.status(200).json({
         status: 'success',
-        payload: req.user
+        payload: sessionUserDTO(req.user)
     });
 }
 
