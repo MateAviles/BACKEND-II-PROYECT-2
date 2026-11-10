@@ -3,6 +3,7 @@
 import { ticketDAO } from "../dao/tickets.dao.js";
 
 const ACTIVE_STATUSES = ["confirmed", "pending"];
+const EVENT_SUMMARY = { path: "event", select: "title date location" };
 
 export class TicketRepository {
 
@@ -11,7 +12,7 @@ export class TicketRepository {
     }
 
     async createTicket(ticketData) {
-        return await this.dao.create(ticketData);
+        return await this.dao.create(ticketData, { populate: EVENT_SUMMARY });
     }
 
     async findTicketById(ticketId) {
@@ -58,7 +59,7 @@ export class TicketRepository {
         return await this.dao.update(ticketId, {
             status: "cancelled",
             cancelledAt: new Date()
-        });
+        }, { populate: EVENT_SUMMARY });
     }
 }
 

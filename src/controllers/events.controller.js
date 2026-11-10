@@ -1,7 +1,7 @@
 
 
-import { fetchEvents, loadEvent, createEvent, updateEventService, updateEventStatusService } from "../services/events.services.js";
-import { EDITABLE_FIELDS } from "../services/events.services.js";
+import { fetchEvents, loadEvent, createEvent, updateEventService, updateEventStatusService } from "../services/events.service.js";
+import { EDITABLE_FIELDS } from "../services/events.service.js";
 import { eventDTO, eventsToDTO } from "../dto/event.dto.js";
 
 export const getEvents = async(req, res, next) => {

@@ -1,23 +1,18 @@
 
 
-import { loadManagedEvent } from "../services/events.services.js";
-import { loadOwnedTicket } from "../services/tickets.services.js";
+import { createError } from "../utils/errors.js";
+import { loadManagedEvent } from "../services/events.service.js";
+import { loadOwnedTicket } from "../services/tickets.service.js";
 
 
 export const authorizeMiddleware = (...allowedRoles) => {
     return (req, res, next) => {
         if(!req.user){
-            return res.status(401).json({
-                status: 'error',
-                message: 'No autenticado'
-            });
+            return next(createError('No autenticado', 401));
         }
 
         if(!allowedRoles.includes(req.user.role)){
-            return res.status(403).json({
-                status: 'error',
-                message: 'No tenés permisos para realizar esta acción'
-            });
+            return next(createError('No tenés permisos para realizar esta acción', 403));
         }
 
         next();

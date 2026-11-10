@@ -1,6 +1,6 @@
 
 
-import { createTicketService, fetchMyTickets, fetchEventTickets, cancelTicketService } from "../services/tickets.services.js";
+import { createTicketService, fetchMyTickets, fetchEventTickets, cancelTicketService } from "../services/tickets.service.js";
 import { ticketDTO, ticketsToDTO } from "../dto/ticket.dto.js";
 
 export const createTicketController = async (req, res, next) => {

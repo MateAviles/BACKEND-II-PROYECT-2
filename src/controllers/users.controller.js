@@ -1,6 +1,6 @@
 
 
-import { fetchUsers } from "../services/users.services.js";
+import { fetchUsers } from "../services/users.service.js";
 import { usersToDTO } from "../dto/user.dto.js";
 
 export const getUsers = async (req, res, next) => {

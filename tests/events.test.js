@@ -68,6 +68,22 @@ describe("Eventos — validaciones de negocio al crear", () => {
         expect(res.body.message).toMatch(/anterior a hoy/i);
     });
 
+    it("acepta una fecha de hoy → 201", async () => {
+        const hoy = new Date();
+        const fechaHoy = [
+            hoy.getFullYear(),
+            String(hoy.getMonth() + 1).padStart(2, '0'),
+            String(hoy.getDate()).padStart(2, '0')
+        ].join('-');
+
+        const res = await request(app)
+            .post("/api/events")
+            .set("Cookie", organizerCookie)
+            .send(baseEvent({ date: fechaHoy }));
+
+        expect(res.status).toBe(201);
+    });
+
     it("rechaza capacity 0 → 400", async () => {
         const res = await request(app)
             .post("/api/events")

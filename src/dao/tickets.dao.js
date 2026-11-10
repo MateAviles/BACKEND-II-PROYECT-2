@@ -5,8 +5,12 @@ import { ticketModel } from "../models/Ticket.js";
 
 export class TicketDAO {
 
-    async create(ticketData) {
-        return await ticketModel.create(ticketData);
+    async create(ticketData, { populate } = {}) {
+        const ticket = await ticketModel.create(ticketData);
+
+        if(populate) await ticket.populate(populate);
+
+        return ticket;
     }
 
     async findById(id) {
@@ -29,12 +33,16 @@ export class TicketDAO {
         return await query;
     }
 
-    async update(id, ticketData) {
-        return await ticketModel.findByIdAndUpdate(
+    async update(id, ticketData, { populate } = {}) {
+        const ticket = await ticketModel.findByIdAndUpdate(
             id,
             ticketData,
             { returnDocument: "after", runValidators: true }
         );
+
+        if(populate && ticket) await ticket.populate(populate);
+
+        return ticket;
     }
 
     async count(filter = {}) {

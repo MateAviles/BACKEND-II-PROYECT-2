@@ -3,12 +3,29 @@
 import { generateToken } from "../utils/jwt.js";
 import { sessionUserDTO } from "../dto/user.dto.js";
 
-export const register = async(req, res) => {
+const parseExpiresInMs = (value) => {
+    const match = /^(\d+)\s*(s|m|h|d)?$/.exec(String(value ?? '').trim());
+
+    if(!match){
+        return 3600000;
+    }
+
+    const unitMs = { s: 1000, m: 60000, h: 3600000, d: 86400000 };
+
+    return Number(match[1]) * (unitMs[match[2] ?? 's'] ?? 1000);
+};
+
+export const register = async(req, res, next) => {
+    try{
 
         res.status(201).json({
             status: "success",
             payload: sessionUserDTO(req.user)
         });
+
+    }catch(error){
+        return next(error);
+    }
 }
 
 
@@ -25,7 +42,7 @@ export const login = async (req, res, next) => {
 
         res.cookie("currentUser", token, {
             httpOnly : true,
-            maxAge: 3600000,
+            maxAge: parseExpiresInMs(process.env.JWT_EXPIRES_IN),
             sameSite: 'lax',
             secure: process.env.NODE_ENV === 'production'
         })

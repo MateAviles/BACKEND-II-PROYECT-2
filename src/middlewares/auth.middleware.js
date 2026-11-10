@@ -2,6 +2,8 @@
 
 import passport from "passport";
 
+import { createError } from "../utils/errors.js";
+
 
 export const authMiddleware = (req, res, next) => {
     passport.authenticate('current', {session: false}, (err, user, info) => {
@@ -10,10 +12,7 @@ export const authMiddleware = (req, res, next) => {
         }
     
         if(!user){
-            return res.status(401).json({
-                status: 'error',
-                message: 'No autenticado'
-            });
+            return next(createError('No autenticado', 401));
         }
     
         req.user = user;

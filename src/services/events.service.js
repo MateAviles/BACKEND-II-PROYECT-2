@@ -1,6 +1,7 @@
 
 
 import { eventRepository } from "../repositories/events.repository.js";
+import { ticketRepository } from "../repositories/tickets.repository.js";
 import { createError } from "../utils/errors.js";
 import { isValidObjectId } from "../utils/ids.js";
 
@@ -81,12 +82,15 @@ const parseEventDate = (rawDate, mensajeInvalida) => {
 };
 
 
-const isPastDate = (date) => {
+const isPastDate = (rawDate) => {
+    const [year, month, day] = String(rawDate).slice(0, 10).split('-').map(Number);
+
+    const fecha = Date.UTC(year, month - 1, day);
+
     const hoy = new Date();
     const hoyUTC = Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-    const fechaUTC = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
 
-    return fechaUTC < hoyUTC;
+    return fecha < hoyUTC;
 };
 
 
@@ -190,7 +194,7 @@ export const createEvent = async (data) => {
 
     const eventDate = parseEventDate(date, 'La fecha del evento es invalida');
 
-    if(isPastDate(eventDate)){
+    if(isPastDate(date)){
         throw createError('La fecha del evento no puede ser anterior a hoy', 400);
     }
 
@@ -283,13 +287,19 @@ export const updateEventService = async (eventId, eventData, currentEvent) => {
 
     const eventDate = parseEventDate(eventData.date, 'La fecha del evento es invalida');
 
-    if(isPastDate(eventDate)){
+    if(isPastDate(eventData.date)){
         throw createError('La fecha del evento no puede ser anterior a hoy', 400);
     }
 
     eventData.date = eventDate;
     
     validateCapacityAndPrice(eventData);
+
+    const occupied = await ticketRepository.sumActiveQuantities(eventId);
+
+    if(eventData.capacity < occupied){
+        throw createError(`La capacidad no puede ser menor a las inscripciones activas (${occupied})`, 409);
+    }
 
     const updatedEvent = await eventRepository.update(eventId, eventData);
 

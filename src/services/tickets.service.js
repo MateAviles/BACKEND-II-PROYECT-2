@@ -3,7 +3,7 @@
 import { randomBytes } from "node:crypto";
 
 import { ticketRepository } from "../repositories/tickets.repository.js";
-import { loadEvent } from "./events.services.js";
+import { loadEvent } from "./events.service.js";
 import { createError } from "../utils/errors.js";
 import { isValidObjectId } from "../utils/ids.js";
 import { sendTicketConfirmation } from "../utils/mailer.js";
@@ -46,19 +46,27 @@ export const createTicketService = async ({ eventId, quantity, userId, userEmail
         throw createError('Ya tenés una inscripción activa para este evento', 409);
     }
 
-    const ticket = await ticketRepository.createTicket({
-        user: userId,
-        event: eventId,
-        quantity,
-        status: 'confirmed',
-        reservationCode: generateReservationCode()
-    });
+    let ticket;
 
-    await ticket.populate('event', 'title date location');
+    try{
+        ticket = await ticketRepository.createTicket({
+            user: userId,
+            event: eventId,
+            quantity,
+            status: 'confirmed',
+            reservationCode: generateReservationCode()
+        });
+    }catch(error){
+
+        if(error.code === 11000){
+            throw createError('Ya tenés una inscripción activa para este evento', 409);
+        }
+
+        throw error;
+    }
 
     try {
-        const mail = await sendTicketConfirmation({ ticket, event, userEmail });
-        console.log(`[mail] confirmación enviada → ${mail.previewUrl || mail.messageId}`);
+        await sendTicketConfirmation({ ticket, event, userEmail });
     }catch(error){
         console.error(`[mail] no se pudo enviar la confirmación: ${error.message}`);
     }
@@ -107,8 +115,6 @@ export const cancelTicketService = async (ticket) => {
     }
 
     const cancelledTicket = await ticketRepository.cancelTicket(ticket._id);
-
-    await cancelledTicket.populate('event', 'title date location');
 
     return cancelledTicket;
 };

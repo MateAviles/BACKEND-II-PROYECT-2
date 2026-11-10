@@ -4,16 +4,9 @@ import passport from "passport";
 import { Strategy as LocalStrategy} from "passport-local";
 import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 
-import { hashPassword, isValidPassword } from "../utils/hash.js";
-import { userRepository } from "../repositories/users.repository.js";
+import { registerUser, loginUser } from "../services/users.service.js";
+import { createError } from "../utils/errors.js";
 
-const MIN_PASSWORD_LENGTH = 6;
-
-const authError = (message, status) => {
-    const error = new Error(message);
-    error.status = status;
-    return error;
-};
 
 passport.use('register', new LocalStrategy(
     {
@@ -23,58 +16,12 @@ passport.use('register', new LocalStrategy(
     },
     async(req, email, password, done) => {
         try{
+
             const {first_name, last_name} = req.body;
-    
-            if(!first_name || !last_name || !email || !password){
-                return done(authError('Faltan campos obligatorios', 400));
-            }
 
-            const normalizedEmail = String(email).trim().toLowerCase();
+            const user = await registerUser({ first_name, last_name, email, password });
 
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-            if(!emailRegex.test(normalizedEmail)){
-                return done(authError('Email inválido', 400));
-            }
-
-            if(password.length < MIN_PASSWORD_LENGTH){
-                return done(authError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`, 400));
-            }
-
-            const existingUser = await userRepository.findByEmail(normalizedEmail);
-
-            if(existingUser){
-                return done(authError('El email ya está registrado', 409));
-            }
-
-            const hashedPassword = await hashPassword(password);
-
-            const userData = {
-                first_name,
-                last_name,
-                email: normalizedEmail,
-                password: hashedPassword,
-                role: 'user'
-            };
-
-            let savedUser;
-
-            try{
-                savedUser = await userRepository.save(userData);
-            }catch(error){
-
-                if(error.code === 11000){
-                    return done(authError('El email ya está registrado', 409));
-                }
-
-                return done(error);
-            }
-
-            const { _id, password: _pass, ...rest} = savedUser.toObject();
-
-            const userWithoutPassword = {id: _id, ...rest};
-
-            return done(null, userWithoutPassword);
+            return done(null, user);
 
         }catch(error){
             return done(error);
@@ -89,19 +36,7 @@ passport.use('login', new LocalStrategy(
 
         try{
 
-            const normalizedEmail = String(email).trim().toLowerCase();
-
-            const user = await userRepository.findByEmail(normalizedEmail);
-
-            if(!user){
-                return done(authError('Credenciales inválidas', 401));
-            }
-
-            const validPassword = await isValidPassword(password, user.password);
-
-            if(!validPassword){
-                return done(authError('Credenciales inválidas', 401));
-            }
+            const user = await loginUser({ email, password });
 
             return done(null, user)
 
@@ -128,17 +63,17 @@ passport.use('current', new JwtStrategy(
         try{
 
             if(!payload || typeof payload !== 'object'){
-                return done(authError('No autenticado', 401));
+                return done(createError('No autenticado', 401));
             }
 
             const validRoles = ['user', 'organizer', 'admin'];
 
             if(!payload.id || !payload.email){
-                return done(authError('No autenticado', 401));
+                return done(createError('No autenticado', 401));
             }
 
             if(!validRoles.includes(payload.role)){
-                return done(authError('No autenticado', 401));
+                return done(createError('No autenticado', 401));
             }
 
             return done(null, {

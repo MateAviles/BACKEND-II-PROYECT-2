@@ -10,6 +10,7 @@ import usersRouter from './routes/users.router.js';
 import { ticketsRouter } from './routes/tickets.router.js';
 
 import { translatePassportError } from './config/passport.config.js';
+import { createError } from './utils/errors.js';
 
 const app = express();
 
@@ -30,6 +31,33 @@ app.get('/api/health', (req, res) => {
 });
 
 
+app.use((req, res, next) => {
+    next(createError('Ruta no encontrada', 404));
+});
+
+
+/**
+ * esto traduce errores de status a http
+ * @param {Error} error
+ * @returns {Error}
+ */
+const translateMongooseError = (error) => {
+    if(error?.name === 'CastError'){
+        return createError('Identificador inválido', 400);
+    }
+
+    if(error?.name === 'ValidationError'){
+        return createError('Datos inválidos', 400);
+    }
+
+    if(error?.code === 11000){
+        return createError('El registro ya existe', 409);
+    }
+
+    return error;
+};
+
+
 app.use((err, req, res, next) => {
     if(err.type === 'entity.parse.failed'){
         return res.status(400).json({
@@ -41,19 +69,21 @@ app.use((err, req, res, next) => {
     const passportMessage = translatePassportError(err, req.path);
 
     if(passportMessage){
-        return res.status(err.status).json({
+        return res.status(err.status || 401).json({
             status: "error",
             message: passportMessage
         });
     }
 
-    const status = err.status || 500;
+    const translated = translateMongooseError(err);
+
+    const status = translated.status || 500;
 
     res.status(status).json({
         status: "error",
         message: status >= 500
             ? "Error interno del servidor"
-            : err.message
+            : translated.message
     });
 });
 
